@@ -44,7 +44,7 @@ import kotlin.math.sqrt
 fun showToastLong(context: Context, message: String) =
     Toast.makeText(context.applicationContext, message, Toast.LENGTH_LONG).show()
 
-fun showToastShort(context: Context, message: String) =
+fun showToast(context: Context, message: String) =
     Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT).show()
 
 suspend fun getAppsList(context: Context, showHiddenApps: Boolean = false): MutableList<AppModel> {
@@ -235,7 +235,7 @@ fun openAppInfo(context: Context, userHandle: UserHandle, packageName: String) {
     val intent: Intent? = context.packageManager.getLaunchIntentForPackage(packageName)
     intent?.let {
         launcher.startAppDetailsActivity(intent.component, userHandle, null, null)
-    } ?: showToastShort(context, "Unable to to open app info")
+    } ?: showToast(context, "Unable to to open app info")
 }
 
 suspend fun getBitmapFromURL(src: String?): Bitmap? {
@@ -448,7 +448,7 @@ fun Context.copyToClipboard(text: String) {
     val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val clipData = ClipData.newPlainText(getString(R.string.app_name), text)
     clipboardManager.setPrimaryClip(clipData)
-    showToastShort(this, "Copied")
+    showToast(this, "Copied")
 }
 
 fun Context.openUrl(url: String) {

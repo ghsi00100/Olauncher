@@ -325,20 +325,6 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         else openCameraApp(requireContext())
     }
 
-    private fun lockPhone() {
-        requireActivity().runOnUiThread {
-            try {
-                deviceManager.lockNow()
-            } catch (e: SecurityException) {
-                showToastLong(requireContext(), "Please turn on double tap to lock")
-                findNavController().navigate(R.id.action_mainFragment_to_settingsFragment)
-            } catch (e: Exception) {
-                showToastLong(requireContext(), "Olauncher failed to lock device.\nPlease check your app settings.")
-                prefs.lockModeOn = false
-            }
-        }
-    }
-
     private fun showStatusBar() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
             requireActivity().window.insetsController?.show(WindowInsets.Type.statusBars())
@@ -371,7 +357,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         requireActivity().recreate()
     }
 
-    private fun showLongPressToast() = showToastShort(requireContext(), "Long press to select app")
+    private fun showLongPressToast() = showToast(requireContext(), "Long press to select app")
 
     private fun textOnClick(view: View) = onClick(view)
 
@@ -411,18 +397,12 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
 
             override fun onDoubleClick() {
                 super.onDoubleClick()
-                if (prefs.lockModeOn)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        requireActivity().runOnUiThread {
-                            if (isAccessServiceEnabled(requireContext()))
-                                binding.lock.performClick()
-                            else {
-                                prefs.lockModeOn = false
-                                showToastLong(requireContext(), "Enable double tap to lock in settings")
-                            }
-                        }
-                    } else
-                        lockPhone()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    requireActivity().runOnUiThread {
+                        if (isAccessServiceEnabled(requireContext()))
+                            binding.lock.performClick()
+                    }
+                }
             }
 
             override fun onTripleClick() {

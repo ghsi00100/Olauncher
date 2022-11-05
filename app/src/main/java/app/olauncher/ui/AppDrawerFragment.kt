@@ -23,7 +23,7 @@ import app.olauncher.data.Prefs
 import app.olauncher.databinding.FragmentAppDrawerBinding
 import app.olauncher.helper.openAppInfo
 import app.olauncher.helper.openUrl
-import app.olauncher.helper.showToastShort
+import app.olauncher.helper.showToast
 
 class AppDrawerFragment : Fragment() {
 
@@ -193,7 +193,7 @@ class AppDrawerFragment : Fragment() {
     private fun renameListener(flag: Int) {
         val name = binding.search.query.toString().trim()
         if (name.isEmpty()) {
-            showToastShort(requireContext(), "Type a new app name first")
+            showToast(requireContext(), "Type a new app name first")
             binding.search.showKeyboard(true)
             return
         }

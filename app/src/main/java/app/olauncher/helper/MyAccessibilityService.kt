@@ -15,11 +15,6 @@ class MyAccessibilityService : AccessibilityService() {
         return START_STICKY
     }
 
-    override fun onServiceConnected() {
-        Prefs(applicationContext).lockModeOn = true
-        super.onServiceConnected()
-    }
-
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         try {

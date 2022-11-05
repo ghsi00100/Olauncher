@@ -1,8 +1,5 @@
 package app.olauncher.ui
 
-import android.app.admin.DevicePolicyManager
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -11,6 +8,7 @@ import android.provider.Settings
 import android.view.*
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
@@ -21,14 +19,11 @@ import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
 import app.olauncher.databinding.FragmentSettingsBinding
 import app.olauncher.helper.*
-import app.olauncher.listener.DeviceAdmin
 
 class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListener {
 
     private lateinit var prefs: Prefs
     private lateinit var viewModel: MainViewModel
-    private lateinit var deviceManager: DevicePolicyManager
-    private lateinit var componentName: ComponentName
 
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
@@ -45,10 +40,6 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             ViewModelProvider(this)[MainViewModel::class.java]
         } ?: throw Exception("Invalid Activity")
         viewModel.isOlauncherDefault()
-
-        deviceManager = context?.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-        componentName = ComponentName(requireContext(), DeviceAdmin::class.java)
-        checkAdminPermission()
 
         binding.homeAppsNum.text = prefs.homeAppsNum.toString()
         populateKeyboardText()
@@ -97,8 +88,10 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             R.id.themeLight -> updateTheme(AppCompatDelegate.MODE_NIGHT_NO)
             R.id.themeDark -> updateTheme(AppCompatDelegate.MODE_NIGHT_YES)
             R.id.themeSystem -> updateTheme(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-            R.id.acceptAccessibility -> openAccessibilityService()
-            R.id.closeAccessibility -> binding.accessibilityLayout.visibility = View.GONE
+            R.id.enableAccessibility -> if (isAccessServiceEnabled(requireContext()))
+                binding.accessibilityLayout.visibility = View.GONE else openAccessibilityService()
+            R.id.disableAccessibility -> if (isAccessServiceEnabled(requireContext()))
+                openAccessibilityService() else binding.accessibilityLayout.visibility = View.GONE
 
             R.id.maxApps0 -> updateHomeAppsNum(0)
             R.id.maxApps1 -> updateHomeAppsNum(1)
@@ -150,10 +143,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             }
             R.id.swipeLeftApp -> toggleSwipeLeft()
             R.id.swipeRightApp -> toggleSwipeRight()
-            R.id.toggleLock -> {
-                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                deviceManager.removeActiveAdmin(componentName) // for backward compatibility
-            }
+            R.id.toggleLock -> startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
         return true
     }
@@ -188,8 +178,8 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         binding.themeLight.setOnClickListener(this)
         binding.themeDark.setOnClickListener(this)
         binding.themeSystem.setOnClickListener(this)
-        binding.acceptAccessibility.setOnClickListener(this)
-        binding.closeAccessibility.setOnClickListener(this)
+        binding.enableAccessibility.setOnClickListener(this)
+        binding.disableAccessibility.setOnClickListener(this)
 
         binding.about.setOnClickListener(this)
         binding.share.setOnClickListener(this)
@@ -242,10 +232,10 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         prefs.swipeLeftEnabled = !prefs.swipeLeftEnabled
         if (prefs.swipeLeftEnabled) {
             binding.swipeLeftApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColor))
-            showToastShort(requireContext(), "Swipe left app enabled")
+            showToast(requireContext(), "Swipe left app enabled")
         } else {
             binding.swipeLeftApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColorTrans50))
-            showToastShort(requireContext(), "Swipe left app disabled")
+            showToast(requireContext(), "Swipe left app disabled")
         }
     }
 
@@ -253,10 +243,10 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         prefs.swipeRightEnabled = !prefs.swipeRightEnabled
         if (prefs.swipeRightEnabled) {
             binding.swipeRightApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColor))
-            showToastShort(requireContext(), "Swipe right app enabled")
+            showToast(requireContext(), "Swipe right app enabled")
         } else {
             binding.swipeRightApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColorTrans50))
-            showToastShort(requireContext(), "Swipe right app disabled")
+            showToast(requireContext(), "Swipe right app disabled")
         }
     }
 
@@ -312,7 +302,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
 
     private fun showHiddenApps() {
         if (prefs.hiddenApps.isEmpty()) {
-            showToastShort(requireContext(), "No hidden apps")
+            showToast(requireContext(), "No hidden apps")
             return
         }
         viewModel.getHiddenApps()
@@ -322,49 +312,22 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         )
     }
 
-    private fun checkAdminPermission() {
-        val isAdmin: Boolean = deviceManager.isAdminActive(componentName)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
-            prefs.lockModeOn = isAdmin
-    }
-
     private fun openAccessibilityService() {
         binding.accessibilityLayout.visibility = View.GONE
-        // prefs.lockModeOn = true
         populateLockSettings()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            showToastLong(requireContext(), "Please turn on Accessibility for Olauncher")
+            if (!isAccessServiceEnabled(requireContext()))
+                showToastLong(requireContext(), "Please turn on Accessibility for Olauncher")
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
     }
 
     private fun toggleLockMode() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            when {
-                prefs.lockModeOn -> {
-                    prefs.lockModeOn = false
-                    deviceManager.removeActiveAdmin(componentName) // for backward compatibility
-                }
-                isAccessServiceEnabled(requireContext()) -> prefs.lockModeOn = true
-                else -> binding.accessibilityLayout.visibility = View.VISIBLE
-            }
-        } else {
-            val isAdmin: Boolean = deviceManager.isAdminActive(componentName)
-            if (isAdmin) {
-                deviceManager.removeActiveAdmin(componentName)
-                prefs.lockModeOn = false
-                showToastShort(requireContext(), "Admin permission removed.")
-            } else {
-                val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
-                intent.putExtra(
-                    DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    getString(R.string.admin_permission_message)
-                )
-                activity?.startActivityForResult(intent, Constants.REQUEST_CODE_ENABLE_ADMIN)
-            }
-        }
-        populateLockSettings()
+            binding.accessibilityLayout.visibility = View.VISIBLE
+            populateLockSettings()
+        } else
+            showToast(requireContext(), "Not supported on your device")
     }
 
     private fun removeWallpaper() {
@@ -386,7 +349,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
 
     private fun showWallpaperToasts() {
         if (isOlauncherDefault(requireContext()))
-            showToastShort(requireContext(), "Your wallpaper will update shortly")
+            showToast(requireContext(), "Your wallpaper will update shortly")
         else
             showToastLong(requireContext(), "Olauncher is not default launcher.\nDaily wallpaper update may fail.")
     }
@@ -476,8 +439,16 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     private fun populateLockSettings() {
-        if (prefs.lockModeOn) binding.toggleLock.text = getString(R.string.on)
-        else binding.toggleLock.text = getString(R.string.off)
+        binding.lockLayout.isVisible = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+        if (isAccessServiceEnabled(requireContext())) {
+            binding.toggleLock.text = getString(R.string.on)
+            binding.enableAccessibility.text = getString(R.string.keep_enabled)
+            binding.disableAccessibility.text = getString(R.string.disable)
+        } else {
+            binding.toggleLock.text = getString(R.string.off)
+            binding.enableAccessibility.text = getString(R.string.enable)
+            binding.disableAccessibility.text = getString(R.string.keep_disabled)
+        }
     }
 
     private fun populateSwipeDownAction() {
@@ -528,11 +499,11 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
 
     private fun showAppListIfEnabled(flag: Int) {
         if ((flag == Constants.FLAG_SET_SWIPE_LEFT_APP) and !prefs.swipeLeftEnabled) {
-            showToastShort(requireContext(), "Long press to enable")
+            showToast(requireContext(), "Long press to enable")
             return
         }
         if ((flag == Constants.FLAG_SET_SWIPE_RIGHT_APP) and !prefs.swipeRightEnabled) {
-            showToastShort(requireContext(), "Long press to enable")
+            showToast(requireContext(), "Long press to enable")
             return
         }
 

@@ -40,8 +40,6 @@ object Constants {
     const val FLAG_SET_SWIPE_LEFT_APP = 11
     const val FLAG_SET_SWIPE_RIGHT_APP = 12
 
-    const val REQUEST_CODE_ENABLE_ADMIN = 666
-
     const val HINT_RATE_US = 30
     const val HINT_SHARE = 50
 

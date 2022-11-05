@@ -722,6 +722,7 @@
                 </FrameLayout>
 
                 <FrameLayout
+                    android:id="@+id/lockLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
@@ -876,7 +877,7 @@
                 style="@style/TextLarge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/permission" />
+                android:text="@string/enable_double_tap_background_lock" />
 
             <TextView
                 style="@style/TextSmall"
@@ -899,21 +900,21 @@
                     android:layout_weight="1" />
 
                 <TextView
-                    android:id="@+id/closeAccessibility"
+                    android:id="@+id/disableAccessibility"
                     style="@style/TextSmall"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="20dp"
                     android:paddingVertical="4dp"
-                    android:text="@string/not_now" />
+                    android:text="@string/keep_disabled" />
 
                 <TextView
-                    android:id="@+id/acceptAccessibility"
+                    android:id="@+id/enableAccessibility"
                     style="@style/TextSmall"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingVertical="4dp"
-                    android:text="@string/accept" />
+                    android:text="@string/enable" />
 
             </LinearLayout>
 

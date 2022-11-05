@@ -138,7 +138,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // activityClassName will be null for hidden apps.
             when (activityInfo.size) {
                 0 -> {
-                    showToastShort(appContext, "App not found")
+                    showToast(appContext, "App not found")
                     return
                 }
                 1 -> ComponentName(packageName, activityInfo[0].name)
@@ -154,10 +154,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 launcher.startMainActivity(component, android.os.Process.myUserHandle(), null, null)
             } catch (e: Exception) {
-                showToastShort(appContext, "Unable to launch app")
+                showToast(appContext, "Unable to launch app")
             }
         } catch (e: Exception) {
-            showToastShort(appContext, "Unable to launch app")
+            showToast(appContext, "Unable to launch app")
         }
     }
 
